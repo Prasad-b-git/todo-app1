@@ -6,7 +6,8 @@
   "scripts": {
     "test": "node tests/server.test.js",
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "build": "echo 'Build step completed'"
   },
   "keywords": [
     "todo",
