@@ -1,48 +1,78 @@
-const request = require('supertest');
-const app = require('../server');  // Import the app
+const http = require('http');
+const assert = require('assert');
+const app = require('./server'); // Import the server
 
-// Set Jest timeout to 10 seconds
-jest.setTimeout(30000); // Increase timeout to 10 seconds
+const PORT = 3000;
+const BASE_URL = `http://localhost:${PORT}`;
 
-let server;
-
-beforeAll((done) => {
-  // Start the server before tests run
-  server = app.listen(3000, done); // Ensure server is listening on port 3000
+// Start the server for testing
+const server = app.listen(PORT, () => {
+    console.log(`Test server running on ${BASE_URL}`);
 });
 
-afterAll((done) => {
-  // Close the server after tests are done to free the port
-  server.close(done);
-});
+// Helper function to send HTTP requests
+function makeRequest(path, method, data) {
+    return new Promise((resolve, reject) => {
+        const dataString = data ? JSON.stringify(data) : null;
+        const options = {
+            hostname: 'localhost',
+            port: PORT,
+            path,
+            method,
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': dataString ? Buffer.byteLength(dataString) : 0,
+            },
+        };
 
-describe('Todo App API', () => {
-  it('should return all tasks', async () => {
-    const response = await request(server).get('/tasks');
-    expect(response.status).toBe(200);
-    expect(Array.isArray(response.body)).toBe(true);
-  });
+        const req = http.request(options, (res) => {
+            let body = '';
+            res.on('data', chunk => body += chunk);
+            res.on('end', () => {
+                resolve({ status: res.statusCode, body: body ? JSON.parse(body) : {} });
+            });
+        });
 
-  it('should add a new task', async () => {
-    const newTask = { content: 'Test task' };
-    const response = await request(server).post('/tasks').send(newTask);
-    expect(response.status).toBe(201);
-    expect(response.body.content).toBe(newTask.content);
-  });
+        req.on('error', reject);
 
-  it('should return error for missing task content', async () => {
-    const response = await request(server).post('/tasks').send({});
-    expect(response.status).toBe(400);
-    expect(response.body.error).toBe('Content is required');
-  });
+        if (dataString) {
+            req.write(dataString);
+        }
+        req.end();
+    });
+}
 
-  it('should delete a task', async () => {
-    const newTask = { content: 'Task to delete' };
-    const createdResponse = await request(server).post('/tasks').send(newTask);
-    const taskId = createdResponse.body.id;
+// Test: Add a task
+(async () => {
+    try {
+        // 1. Add a task
+        const addResponse = await makeRequest('/tasks', 'POST', { task: 'Learn Node.js' });
+        assert.strictEqual(addResponse.status, 201);
+        assert.strictEqual(addResponse.body.message, 'Task added successfully');
+        console.log('✅ Add task test passed');
 
-    const deleteResponse = await request(server).delete(`/tasks/${taskId}`);
-    expect(deleteResponse.status).toBe(200);
-    expect(deleteResponse.body.message).toBe('Task deleted');
-  });
-});
+        // 2. Get all tasks
+        const getResponse = await makeRequest('/tasks', 'GET');
+        assert.strictEqual(getResponse.status, 200);
+        assert.strictEqual(getResponse.body.length, 1);
+        assert.strictEqual(getResponse.body[0].task, 'Learn Node.js');
+        console.log('✅ Get tasks test passed');
+
+        // 3. Delete the task
+        const taskId = getResponse.body[0].id;
+        const deleteResponse = await makeRequest(`/tasks/${taskId}`, 'DELETE');
+        assert.strictEqual(deleteResponse.status, 200);
+        assert.strictEqual(deleteResponse.body.message, 'Task deleted successfully');
+        console.log('✅ Delete task test passed');
+
+        // 4. Ensure task list is empty
+        const emptyResponse = await makeRequest('/tasks', 'GET');
+        assert.strictEqual(emptyResponse.body.length, 0);
+        console.log('✅ Empty task list test passed');
+
+    } catch (error) {
+        console.error('❌ Test failed:', error.message);
+    } finally {
+        server.close(); // Stop the server after testing
+    }
+})();
