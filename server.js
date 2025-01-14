@@ -1,8 +1,6 @@
-// Import required modules
 const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
-
 const app = express();
 const PORT = 3000;
 
@@ -38,14 +36,21 @@ app.delete('/tasks/:id', (req, res) => {
     res.json({ message: 'Task deleted successfully' });
 });
 
+// Add endpoint to clear all tasks (needed for testing)
+app.delete('/tasks', (req, res) => {
+    tasks = [];
+    res.status(200).json({ message: 'All tasks cleared' });
+});
+
 // Serve the frontend
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.listen(PORT, () => {
+// Create server instance separately so we can export it
+const server = app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });
 
-// Export the app for testing purposes
-module.exports = app;
+// Export both app and server for testing purposes
+module.exports = server;
