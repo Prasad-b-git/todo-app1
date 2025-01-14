@@ -1,3 +1,6 @@
+const request = require('supertest');
+const app = require('../server');  // Import the app
+
 // Set Jest timeout to 10 seconds
 jest.setTimeout(10000); // Increase timeout to 10 seconds
 
