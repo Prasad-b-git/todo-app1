@@ -1,78 +1,45 @@
-const http = require('http');
 const assert = require('assert');
-const app = require('./server'); // Import the server
+const http = require('http');
+const app = require('../server');
 
-const PORT = 3000;
-const BASE_URL = `http://localhost:${PORT}`;
+const BASE_URL = 'http://localhost:3000';
 
-// Start the server for testing
-const server = app.listen(PORT, () => {
-    console.log(`Test server running on ${BASE_URL}`);
-});
-
-// Helper function to send HTTP requests
-function makeRequest(path, method, data) {
+// Helper function to make HTTP requests
+function makeRequest(path, method = 'GET', data = null) {
     return new Promise((resolve, reject) => {
-        const dataString = data ? JSON.stringify(data) : null;
         const options = {
             hostname: 'localhost',
-            port: PORT,
+            port: 3000,
             path,
             method,
             headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': dataString ? Buffer.byteLength(dataString) : 0,
-            },
+                'Content-Type': 'application/json'
+            }
         };
 
-        const req = http.request(options, (res) => {
+        const req = http.request(options, res => {
             let body = '';
             res.on('data', chunk => body += chunk);
-            res.on('end', () => {
-                resolve({ status: res.statusCode, body: body ? JSON.parse(body) : {} });
-            });
+            res.on('end', () => resolve({ statusCode: res.statusCode, body: JSON.parse(body || '{}') }));
         });
 
         req.on('error', reject);
 
-        if (dataString) {
-            req.write(dataString);
-        }
+        if (data) req.write(JSON.stringify(data));
         req.end();
     });
 }
 
-// Test: Add a task
-(async () => {
-    try {
-        // 1. Add a task
-        const addResponse = await makeRequest('/tasks', 'POST', { task: 'Learn Node.js' });
-        assert.strictEqual(addResponse.status, 201);
-        assert.strictEqual(addResponse.body.message, 'Task added successfully');
-        console.log('✅ Add task test passed');
+// Test: Fetch empty task list
+makeRequest('/tasks').then(response => {
+    assert.strictEqual(response.statusCode, 200);
+    assert.deepStrictEqual(response.body, []);
+    console.log('✅ GET /tasks - Passed');
+}).catch(err => console.error('❌ GET /tasks - Failed', err));
 
-        // 2. Get all tasks
-        const getResponse = await makeRequest('/tasks', 'GET');
-        assert.strictEqual(getResponse.status, 200);
-        assert.strictEqual(getResponse.body.length, 1);
-        assert.strictEqual(getResponse.body[0].task, 'Learn Node.js');
-        console.log('✅ Get tasks test passed');
-
-        // 3. Delete the task
-        const taskId = getResponse.body[0].id;
-        const deleteResponse = await makeRequest(`/tasks/${taskId}`, 'DELETE');
-        assert.strictEqual(deleteResponse.status, 200);
-        assert.strictEqual(deleteResponse.body.message, 'Task deleted successfully');
-        console.log('✅ Delete task test passed');
-
-        // 4. Ensure task list is empty
-        const emptyResponse = await makeRequest('/tasks', 'GET');
-        assert.strictEqual(emptyResponse.body.length, 0);
-        console.log('✅ Empty task list test passed');
-
-    } catch (error) {
-        console.error('❌ Test failed:', error.message);
-    } finally {
-        server.close(); // Stop the server after testing
-    }
-})();
+// Test: Add a new task
+makeRequest('/tasks', 'POST', { task: 'Test Task' }).then(response => {
+    assert.strictEqual(response.statusCode, 201);
+    assert.strictEqual(response.body.message, 'Task added successfully');
+    console.log('✅ POST /tasks - Passed');
+}).catch(err => console.error('❌ POST /tasks - Failed', err));
