@@ -37,7 +37,8 @@ jobs:
     # Step 3: Run tests
     - name: Run tests
       run: |
-        sudo apt-get install -y fuser  # Install fuser to handle port killing
+        sudo apt-get update  # Update package list
+        sudo apt-get install -y psmisc  # Install psmisc which contains fuser
         fuser -k 3000/tcp || true  # Kill any process using port 3000
         npm test
 
