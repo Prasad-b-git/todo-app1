@@ -37,8 +37,8 @@ jobs:
     # Step 3: Run tests
     - name: Run tests
       run: |
-        sudo apt-get update  # Update package list
-        sudo apt-get install -y psmisc  # Install psmisc which contains fuser
+        sudo apt-get update
+        sudo apt-get install -y fuser  # Install fuser to handle port killing
         fuser -k 3000/tcp || true  # Kill any process using port 3000
         npm test
 
@@ -55,20 +55,20 @@ jobs:
         # Run the new container
         docker run -d --name todo-app -p 3000:3000 ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}
 
-    # Step 5: Push Docker image to Docker Hub
-    - name: Push Docker image to Docker Hub
-      env:
-        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}  # GitHub secret for Docker Hub username
-        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}  # GitHub secret for Docker Hub password
-      run: |
-        echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin
-        docker push ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}
-        docker push ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_IMAGE }}:latest
-
-    # Step 6: Send notification on failure
-    - name: Send failure notification
+    # Step 5: Send email on failure
+    - name: Send email on failure
       if: failure()  # Only run if the job fails
-      run: |
-        curl -X POST \
-        -H 'Content-type: application/json' \
-        --data '{"text":"Build failed: ${{ github.repository }} - Build # ${{ github.run_number }}. Check the build logs for more details: ${{ github.server_url }}/${{ github.repository }}/runs/${{ github.run_id }}"}'
+      uses: dawidd6/action-send-mail@v3
+      with:
+        server_address: smtp.gmail.com
+        server_port: 587
+        username: ${{ secrets.EMAIL_USERNAME }}  # Gmail username
+        password: ${{ secrets.EMAIL_PASSWORD }}  # Gmail App Password
+        subject: "Pipeline Failed: ${{ github.repository }} - Build #${{ github.run_number }}"
+        body: |
+          The build for the repository `${{ github.repository }}` has failed.
+
+          Build Number: ${{ github.run_number }}
+          Check the logs at: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        to: prasadsb240801@gmail.com
+        from: ${{ secrets.EMAIL_USERNAME }}  # Sender's email address
