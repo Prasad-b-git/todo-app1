@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: self-hosted  # Specify the VM to run the job on
+    runs-on: ubuntu-latest  # Specify the VM to run the job on
 
     env:
       NODE_ENV: 'development'
@@ -37,8 +37,7 @@ jobs:
     # Step 3: Run tests
     - name: Run tests
       run: |
-        sudo apt-get update  # Update package list
-        sudo apt-get install -y psmisc  # Install psmisc which contains fuser
+        sudo apt-get install -y fuser  # Install fuser to handle port killing
         fuser -k 3000/tcp || true  # Kill any process using port 3000
         npm test
 
@@ -54,3 +53,21 @@ jobs:
         
         # Run the new container
         docker run -d --name todo-app -p 3000:3000 ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}
+
+    # Step 5: Push Docker image to Docker Hub
+    - name: Push Docker image to Docker Hub
+      env:
+        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}  # GitHub secret for Docker Hub username
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}  # GitHub secret for Docker Hub password
+      run: |
+        echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin
+        docker push ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}
+        docker push ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_IMAGE }}:latest
+
+    # Step 6: Send notification on failure
+    - name: Send failure notification
+      if: failure()  # Only run if the job fails
+      run: |
+        curl -X POST \
+        -H 'Content-type: application/json' \
+        --data '{"text":"Build failed: ${{ github.repository }} - Build # ${{ github.run_number }}. Check the build logs for more details: ${{ github.server_url }}/${{ github.repository }}/runs/${{ github.run_id }}"}'
