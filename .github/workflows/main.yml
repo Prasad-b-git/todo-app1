@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest  # Specify the VM to run the job on
+    runs-on: self-hosted  # Specify the VM to run the job on
 
     env:
       NODE_ENV: 'development'
