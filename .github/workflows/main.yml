@@ -70,5 +70,5 @@ jobs:
 
           Build Number: ${{ github.run_number }}
           Check the logs at: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        to: prasadsb240801@gmail.com
+        to: prasadbandagale2021.it@mmcoe.edu.in
         from: ${{ secrets.EMAIL_USERNAME }}  # Sender's email address
