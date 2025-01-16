@@ -3,34 +3,160 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple ToDo App</title>
+    <title>Modern ToDo App</title>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        #taskList { list-style: none; padding: 0; }
-        li { margin: 10px 0; }
-        button { margin-left: 10px; }
+        :root {
+            --primary-color: #4A90E2;
+            --bg-color: #f5f7fa;
+            --text-color: #2c3e50;
+            --shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+        }
+
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+            font-size: 2.5rem;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+        }
+
+        #taskInput {
+            flex: 1;
+            padding: 0.8rem 1rem;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        #taskInput:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: transform 0.2s ease, background-color 0.2s ease;
+        }
+
+        button:hover {
+            background: #357ABD;
+            transform: translateY(-1px);
+        }
+
+        button.delete-btn {
+            background: #ff6b6b;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        button.delete-btn:hover {
+            background: #ff5252;
+        }
+
+        #taskList {
+            list-style: none;
+        }
+
+        .task-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-radius: 8px;
+            border: 1px solid #e1e8ed;
+            animation: slideIn 0.3s ease;
+        }
+
+        .task-item:hover {
+            box-shadow: var(--shadow);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #94a3b8;
+            padding: 2rem;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
-    <h1>ToDo List</h1>
-    <input type="text" id="taskInput" placeholder="Enter a task" />
-    <button onclick="addTask()">Add Task</button>
-
-    <ul id="taskList"></ul>
-
+    <div class="container">
+        <h1>Todo List</h1>
+        <div class="input-group">
+            <input type="text" id="taskInput" placeholder="What needs to be done?" />
+            <button onclick="addTask()">Add Task</button>
+        </div>
+        <ul id="taskList"></ul>
+    </div>
     <script>
         async function fetchTasks() {
             const res = await fetch('/tasks');
             const tasks = await res.json();
             const taskList = document.getElementById('taskList');
             taskList.innerHTML = '';
+            
+            if (tasks.length === 0) {
+                taskList.innerHTML = '<div class="empty-state">No tasks yet. Add one to get started!</div>';
+                return;
+            }
+
             tasks.forEach(task => {
                 const li = document.createElement('li');
-                li.textContent = task.task;
-                const delBtn = document.createElement('button');
-                delBtn.textContent = 'Delete';
-                delBtn.onclick = () => deleteTask(task.id);
-                li.appendChild(delBtn);
+                li.className = 'task-item';
+                li.innerHTML = `
+                    <span>${task.task}</span>
+                    <button class="delete-btn" onclick="deleteTask(${task.id})">Delete</button>
+                `;
                 taskList.appendChild(li);
             });
         }
@@ -53,6 +179,13 @@
             await fetch(`/tasks/${id}`, { method: 'DELETE' });
             fetchTasks();
         }
+
+        // Add enter key support
+        document.getElementById('taskInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addTask();
+            }
+        });
 
         fetchTasks();
     </script>
