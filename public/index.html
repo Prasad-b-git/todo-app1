@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Modern ToDo App</title>
     <style>
         :root {
@@ -19,10 +19,9 @@
         }
 
         body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            font-family: 'Segoe UI', system-ui, sans-serif;
             background: var(--bg-color);
             color: var(--text-color);
-            line-height: 1.6;
             padding: 2rem;
             max-width: 800px;
             margin: 0 auto;
@@ -39,7 +38,6 @@
             color: var(--primary-color);
             margin-bottom: 1.5rem;
             font-size: 2.5rem;
-            font-weight: 600;
             text-align: center;
         }
 
@@ -55,7 +53,6 @@
             border: 2px solid #e1e8ed;
             border-radius: 8px;
             font-size: 1rem;
-            transition: border-color 0.3s ease;
         }
 
         #taskInput:focus {
@@ -72,12 +69,10 @@
             cursor: pointer;
             font-size: 1rem;
             font-weight: 500;
-            transition: transform 0.2s ease, background-color 0.2s ease;
         }
 
         button:hover {
             background: #357ABD;
-            transform: translateY(-1px);
         }
 
         button.delete-btn {
@@ -98,27 +93,11 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: white;
             padding: 1rem;
             margin: 0.5rem 0;
             border-radius: 8px;
             border: 1px solid #e1e8ed;
-            animation: slideIn 0.3s ease;
-        }
-
-        .task-item:hover {
-            box-shadow: var(--shadow);
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            background: #fff;
         }
 
         .empty-state {
@@ -133,18 +112,19 @@
     <div class="container">
         <h1>Todo List</h1>
         <div class="input-group">
-            <input type="text" id="taskInput" placeholder="What needs to be done?" />
-            <button onclick="addTask()">Add Task</button>
+            <input type="text" id="taskInput" placeholder="What needs to be done?" aria-label="Task input" />
+            <button onclick="addTask()" role="button">Add Task</button>
         </div>
         <ul id="taskList"></ul>
     </div>
-    <script>
+
+    <script defer>
         async function fetchTasks() {
-            const res = await fetch('/tasks');
+            const res = await fetch('/api/tasks');
             const tasks = await res.json();
             const taskList = document.getElementById('taskList');
             taskList.innerHTML = '';
-            
+
             if (tasks.length === 0) {
                 taskList.innerHTML = '<div class="empty-state">No tasks yet. Add one to get started!</div>';
                 return;
@@ -155,7 +135,7 @@
                 li.className = 'task-item';
                 li.innerHTML = `
                     <span>${task.task}</span>
-                    <button class="delete-btn" onclick="deleteTask(${task.id})">Delete</button>
+                    <button class="delete-btn" onclick="deleteTask(${task.id})" role="button" aria-label="Delete Task">Delete</button>
                 `;
                 taskList.appendChild(li);
             });
@@ -165,7 +145,7 @@
             const taskInput = document.getElementById('taskInput');
             const task = taskInput.value.trim();
             if (task) {
-                await fetch('/tasks', {
+                await fetch('/api/tasks', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ task })
@@ -176,11 +156,10 @@
         }
 
         async function deleteTask(id) {
-            await fetch(`/tasks/${id}`, { method: 'DELETE' });
+            await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
             fetchTasks();
         }
 
-        // Add enter key support
         document.getElementById('taskInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 addTask();
