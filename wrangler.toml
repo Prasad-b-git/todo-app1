@@ -1,0 +1,8 @@
+name = "task-manager-worker"
+type = "module"
+
+account_id = "fce3c87a6c8a88478ade53a9d06edeeb"
+workers_dev = true
+compatibility_date = "2025-04-09"
+
+main = "worker.js"
